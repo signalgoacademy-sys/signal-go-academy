@@ -1,7 +1,15 @@
+import './globals.css'
+
 export const metadata = {
+  metadataBase: new URL('https://signal-go-academy.vercel.app'),
   title: 'Signal GO Academy',
   description: 'Centro de registro de trading y gestión del riesgo',
-
+  applicationName: 'Signal GO Academy',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Signal GO Academy',
+  },
   openGraph: {
     title: 'Signal GO Academy',
     description: 'Centro de registro de trading y gestión del riesgo',
@@ -18,7 +26,6 @@ export const metadata = {
     locale: 'es_ES',
     type: 'website',
   },
-
   twitter: {
     card: 'summary_large_image',
     title: 'Signal GO Academy',
