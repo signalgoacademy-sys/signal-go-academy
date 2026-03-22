@@ -95,6 +95,7 @@ export default function Home() {
 
   const [editingTradeId, setEditingTradeId] = useState(null)
   const [side, setSide] = useState('buy')
+  const [tradeResult, setTradeResult] = useState('win')
   const [profit, setProfit] = useState('')
   const [pips, setPips] = useState('')
   const [note, setNote] = useState('')
@@ -311,6 +312,7 @@ export default function Home() {
   function resetTradeForm() {
     setEditingTradeId(null)
     setSide('buy')
+    setTradeResult('win')
     setProfit('')
     setPips('')
     setNote('')
@@ -331,17 +333,23 @@ export default function Home() {
     }
 
     if (profit === '' || pips === '') {
-      setMessage('Completa profit y pips')
+      setMessage('Completa USD y pips')
       return
     }
+
+    const rawProfit = Math.abs(Number(profit || 0))
+    const rawPips = Math.abs(Number(pips || 0))
+
+    const signedProfit = tradeResult === 'loss' ? -rawProfit : rawProfit
+    const signedPips = tradeResult === 'loss' ? -rawPips : rawPips
 
     const payload = {
       user_id: currentUser.id,
       trade_date: new Date().toISOString(),
       side,
       symbol: 'XAUUSD',
-      profit_usd: Number(profit || 0),
-      pips: Number(pips || 0),
+      profit_usd: signedProfit,
+      pips: signedPips,
       note,
       setup_type: setupType,
       confirmation,
@@ -382,8 +390,9 @@ export default function Home() {
   function startEditTrade(trade) {
     setEditingTradeId(trade.id)
     setSide(trade.side || 'buy')
-    setProfit(String(trade.profit_usd ?? ''))
-    setPips(String(trade.pips ?? ''))
+    setTradeResult(Number(trade.profit_usd || 0) >= 0 ? 'win' : 'loss')
+    setProfit(String(Math.abs(Number(trade.profit_usd ?? 0))))
+    setPips(String(Math.abs(Number(trade.pips ?? 0))))
     setNote(trade.note || '')
     setSetupType(trade.setup_type || '')
     setConfirmation(trade.confirmation || '')
@@ -718,10 +727,11 @@ export default function Home() {
 
     autoTable(doc, {
       startY: 92,
-      head: [['Fecha', 'Tipo', 'Setup', 'Profit', 'Pips', 'Nota']],
+      head: [['Fecha', 'Tipo', 'Resultado', 'Setup', 'Profit', 'Pips', 'Nota']],
       body: reportFilteredTrades.map((trade) => [
         formatDateTime(trade.trade_date),
         trade.side === 'buy' ? 'Compra' : 'Venta',
+        Number(trade.profit_usd || 0) >= 0 ? 'Ganado' : 'Perdido',
         trade.setup_type || '-',
         `$${trade.profit_usd}`,
         trade.pips,
@@ -879,6 +889,11 @@ export default function Home() {
                       La fecha y hora se guardan automáticamente según el dispositivo.
                     </div>
 
+                    <div className="rounded-xl bg-slate-950 p-3 text-sm text-slate-300">
+                      Escribe USD y pips en positivo. La app pondrá el signo negativo
+                      automáticamente si eliges <strong>Perdido</strong>.
+                    </div>
+
                     <select
                       className="w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-white outline-none"
                       value={side}
@@ -888,9 +903,18 @@ export default function Home() {
                       <option value="sell">Venta</option>
                     </select>
 
+                    <select
+                      className="w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-white outline-none"
+                      value={tradeResult}
+                      onChange={(e) => setTradeResult(e.target.value)}
+                    >
+                      <option value="win">Ganado</option>
+                      <option value="loss">Perdido</option>
+                    </select>
+
                     <input
                       type="number"
-                      placeholder="Ganancia USD"
+                      placeholder="USD"
                       className="w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-white outline-none"
                       value={profit}
                       onChange={(e) => setProfit(e.target.value)}
@@ -1437,15 +1461,39 @@ export default function Home() {
                             </span>
                           </div>
 
+                          <div className="mb-3">
+                            <span
+                              className={`rounded-full px-3 py-1 text-xs font-bold ${
+                                Number(trade.profit_usd || 0) >= 0
+                                  ? 'bg-green-500 text-black'
+                                  : 'bg-red-500 text-white'
+                              }`}
+                            >
+                              {Number(trade.profit_usd || 0) >= 0 ? 'Ganado' : 'Perdido'}
+                            </span>
+                          </div>
+
                           <div className="grid grid-cols-2 gap-3 text-sm">
                             <div className="rounded-xl bg-slate-900 p-3">
                               <p className="text-slate-400">Profit</p>
-                              <p className="font-bold text-white">${trade.profit_usd}</p>
+                              <p
+                                className={`font-bold ${
+                                  Number(trade.profit_usd || 0) >= 0 ? 'text-green-400' : 'text-red-400'
+                                }`}
+                              >
+                                ${trade.profit_usd}
+                              </p>
                             </div>
 
                             <div className="rounded-xl bg-slate-900 p-3">
                               <p className="text-slate-400">Pips</p>
-                              <p className="font-bold text-white">{trade.pips}</p>
+                              <p
+                                className={`font-bold ${
+                                  Number(trade.pips || 0) >= 0 ? 'text-green-400' : 'text-red-400'
+                                }`}
+                              >
+                                {trade.pips}
+                              </p>
                             </div>
                           </div>
 
